@@ -1,0 +1,11 @@
+.idea
+dataset
+venv
+wandb
+wandb_cache
+out
+checkpoints
+oom_epoch_0_step_0.pt
+*.pth
+*.pyc
+RedEdge.zip

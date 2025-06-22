@@ -1,0 +1,77 @@
+experiment:
+  name: RowWeed
+  group: SegFormerSmall
+  continue_with_errors: False
+  start_from_grid: 0
+  start_from_run: 0
+  search: grid
+  task: segmentation
+
+parameters:
+  seed: &seed [42]
+
+  tracker:
+    ignored_files: ["*.bin,*.safetensors"]
+    train_image_log_frequency: [20]
+    val_image_log_frequency: [10]
+    test_image_log_frequency: [10]
+    tags: [[Focal, Small]]
+
+  train:
+    max_epochs: [30]
+    compile: [False]
+    initial_lr: [0.0001]
+    optimizer: [AdamW]
+    watch_metric: [F1Score]
+    freeze_backbone: [False]
+    check_nan: [1]
+
+  loss:
+    class_weighting: [True]
+    components:
+      - focal:
+          weight: 1.0
+
+  model:
+    name: [segformer]
+    params:
+      input_channels: &input_channels [['R', 'G', 'B']]
+      version: ["nvidia/mit-b0"]
+
+  dataset:
+    root: [dataset/patches/512]
+    gt_folder: [dataset/generated/69023956/pseudogt]
+    channels: *input_channels
+    train_fields: [["001", "002", "003", "004"]]
+    test_fields: [["000"]]
+    preprocess:
+      mean: [[0.485, 0.456, 0.406]]
+      std: [[0.229, 0.224, 0.225]]
+
+  dataloader:
+    num_workers: [0]
+    batch_size: [6]
+
+  train_metrics:
+    JaccardIndex: &metric_params
+      num_classes: [3]
+      task: [multiclass]
+      average: [macro]
+    F1Score: *metric_params
+  val_metrics:
+    JaccardIndex: *metric_params
+    F1Score: *metric_params    
+
+other_grids:
+  -   dataset: # parameters depending on the class you defined for the dataset
+        train_fields: [["000", "002", "003", "004"]]
+        test_fields: [["001"]]
+  -   dataset: # parameters depending on the class you defined for the dataset
+        train_fields: [["000", "001", "003", "004"]]
+        test_fields: [["002"]]
+  -   dataset: # parameters depending on the class you defined for the dataset
+        train_fields: [["000", "001", "002", "004"]]
+        test_fields: [["003"]]
+  -   dataset: # parameters depending on the class you defined for the dataset
+        train_fields: [["000", "001", "002", "003"]]
+        test_fields: [["004"]]
