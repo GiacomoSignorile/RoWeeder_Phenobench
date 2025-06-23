@@ -186,7 +186,6 @@ def get_testloader(dataset_params, dataloader_params, transforms, target_transfo
         target_transform=target_transforms,
         **test_params,
     )
-
     return torch.utils.data.DataLoader(
         test_set,
         batch_size=dataloader_params["batch_size"],

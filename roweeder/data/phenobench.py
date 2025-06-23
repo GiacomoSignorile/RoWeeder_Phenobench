@@ -7,6 +7,9 @@ from torch.utils.data import Dataset
 import torchvision
 from roweeder.data.utils import DataDict, extract_plants, LABELS, pad_patches
 from torchvision.transforms.functional import to_pil_image
+from PIL import Image
+import numpy as np
+import torchvision.transforms.functional as TF
 
 class PhenoBenchDataset(Dataset):
     id2class = {
@@ -23,7 +26,7 @@ class PhenoBenchDataset(Dataset):
         transform=None,
         target_transform=None,
         return_path=False,
-        return_ndvi=False, 
+        return_ndvi=False,
     ):
         super().__init__()
         self.root = root
@@ -34,7 +37,6 @@ class PhenoBenchDataset(Dataset):
         self.fields = fields
         self.return_ndvi = return_ndvi
 
-        self.channels = channels
         if gt_folder is None:
             self.gt_folders = {
                 field: os.path.join(self.root, field, "semantics")
@@ -47,21 +49,38 @@ class PhenoBenchDataset(Dataset):
             for k, v in self.gt_folders.items():
                 if os.path.isdir(os.path.join(v, os.listdir(v)[0])):
                     self.gt_folders[k] = os.path.join(v, "semantics") 
-            
-            self.index = [
-                (field, filename) for field in self.fields for filename in sorted(os.listdir(os.path.join(self.root, field, "images")))
-            ]
-            print(f"--- Initializing in PhenoBench mode for splits: {self.fields}. Found {len(self.index)} images. ---")
+
+        self.index = [
+            (field, filename) for field in self.fields for filename in sorted(os.listdir(os.path.join(self.root, field, "images")))
+        ]
+        print(f"--- Initializing in PhenoBench mode for splits: {self.fields}. Found {len(self.index)} images. ---")
+
 
     def __len__(self):
         return len(self.index)
-    
+        
     def _get_gt(self, gt_path):
-        gt = torchvision.io.read_image(gt_path)
-        gt = gt[[2, 1, 0], ::]
-        gt = gt.argmax(dim=0)
-        gt = self.target_transform(gt)
-        return gt
+            target_pil = Image.open(gt_path)
+            target_np = np.array(target_pil, dtype=np.int64)
+
+            # If gt_path is from the original PhenoBench 'semantics', remap classes
+            if 'PhenoBench' in gt_path and 'semantics' in gt_path:
+                remapped_mask = np.zeros_like(target_np, dtype=np.int64)
+                remapped_mask[(target_np == 1) | (target_np == 3) | (target_np == 4)] = 1
+                remapped_mask[target_np == 2] = 2
+                target_np = remapped_mask
+            
+            # If the pseudo-gt is color-coded, convert it
+            elif target_np.ndim == 3:
+                temp_mask = np.zeros((target_np.shape[0], target_np.shape[1]), dtype=np.int64)
+                temp_mask[target_np[:,:,1] > 128] = 1 # Green -> Crop
+                temp_mask[target_np[:,:,0] > 128] = 2 # Red -> Weed
+                target_np = temp_mask
+
+            gt = torch.from_numpy(target_np)            
+            if self.target_transform:
+                gt = self.target_transform(gt)
+            return gt
     
     def _get_image(self, field, filename):
         channels = []
