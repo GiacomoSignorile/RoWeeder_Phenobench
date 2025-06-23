@@ -3,12 +3,14 @@ from sklearn.model_selection import train_test_split
 import torch
 import numpy as np
 import torchvision.transforms as T
-from roweeder.data.phenobench import (PhenoBenchDataset, SelfSupervisedPhenoBenchDataset)
+from roweeder.data.phenobench import (PhenoBenchDataset, SelfSupervisedPhenoBenchDataset, ClassificationPhenoBenchDataset)
 from roweeder.data.weedmap import (
     SelfSupervisedWeedMapDataset,
     WeedMapDataset,
     ClassificationWeedMapDataset,
 )
+from torch.utils.data import Subset
+
 
 
 def get_preprocessing(dataset_params):
@@ -68,12 +70,12 @@ def get_classification_dataloaders(dataset_params, dataloader_params, seed=42):
         train_params.pop("train_fields")
         train_params.pop("test_fields")
         train_params.pop("test_root", None)
-        train_set = ClassificationWeedMapDataset(
+        train_set = ClassificationPhenoBenchDataset(
             **train_params,
             transform=transforms,
             target_transform=target_transforms,
         )
-        val_set = ClassificationWeedMapDataset(
+        val_set = ClassificationPhenoBenchDataset(
             **train_params,
             transform=transforms,
             target_transform=target_transforms,
@@ -110,51 +112,9 @@ def get_classification_dataloaders(dataset_params, dataloader_params, seed=42):
     )
     return train_loader, val_loader, test_loader, deprocess
 
-
-def get_phenobench_dataloaders(dataset_params, dataloader_params, seed=42):
-    print("--- Using PhenoBench Dataloader Logic ---")
-    dataset_params = deepcopy(dataset_params)
-    transforms, target_transforms, deprocess = get_preprocessing(dataset_params)
-
-    # 1. Create the Training Dataset using the SelfSupervised class
-    train_params = deepcopy(dataset_params)
-    train_set = SelfSupervisedPhenoBenchDataset(
-        root=train_params["root"],
-        gt_folder=train_params["gt_folder"], # Use the pseudo-GT path
-        split='train',
-        transform=transforms,
-        target_transform=target_transforms
-    )
-    train_loader = torch.utils.data.DataLoader(train_set, **dataloader_params, shuffle=True)
-
-    # 2. Create the Validation Dataset using the standard class (Real GT)
-    val_params = deepcopy(dataset_params)
-    val_set = PhenoBenchDataset(
-        root=val_params["root"],
-        split='val',
-        transform=transforms,
-        target_transform=target_transforms
-    )
-    val_loader = torch.utils.data.DataLoader(val_set, **dataloader_params, shuffle=False)
-    
-    # 3. Test loader is the same as the validation loader
-    test_loader = val_loader
-
-    return train_loader, val_loader, test_loader, deprocess
-
-
-# --- MODIFIED get_dataloaders FUNCTION ---
 def get_dataloaders(dataset_params, dataloader_params, seed=42):
     
-    dataset_name = dataset_params.get("name")
-
-    if dataset_name == "PhenoBenchDataset":
-        # This is now the correct way to handle PhenoBench
-        return get_phenobench_dataloaders(dataset_params, dataloader_params, seed)
-    
-    # --- ORIGINAL LOGIC FOR WEEDMAP ---
     if "gt_folder" not in dataset_params:
-        # Classification dataset
         return get_classification_dataloaders(dataset_params, dataloader_params, seed)
         
     dataset_params = deepcopy(dataset_params)
@@ -167,13 +127,13 @@ def get_dataloaders(dataset_params, dataloader_params, seed=42):
         train_params.pop("test_fields")
         
         # This part handles training on pseudo-GT for WeedMap
-        train_set = SelfSupervisedWeedMapDataset(
+        train_set = SelfSupervisedPhenoBenchDataset(
             **train_params,
             transform=transforms,
             target_transform=target_transforms,
         )
         # This part handles validation on REAL GT for WeedMap
-        val_set = WeedMapDataset(
+        val_set = PhenoBenchDataset(
             **train_params,
             transform=transforms,
             target_transform=target_transforms,
@@ -221,7 +181,7 @@ def get_testloader(dataset_params, dataloader_params, transforms, target_transfo
     if "train_fields" in dataset_params:
         test_params.pop("train_fields")
 
-    test_set = WeedMapDataset(
+    test_set = PhenoBenchDataset(
         transform=transforms,
         target_transform=target_transforms,
         **test_params,

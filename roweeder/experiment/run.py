@@ -360,6 +360,15 @@ class Run:
         self.tracker.log_metric("step", self.global_train_step)
         return self._update_metrics(self.train_metrics, preds, gt, tot_steps)
 
+    def check_gradients(self):
+        logger.info("Checking gradients...")
+        for name, param in self.model.named_parameters():
+            if param.grad is None:
+                logger.warning(f"Parameter {name} has no gradient.")
+            else:
+                grad_norm = param.grad.norm().item()
+                logger.info(f"Gradient norm for {name}: {grad_norm}")
+
     def train_epoch(
         self,
         epoch: int,

@@ -3,7 +3,7 @@
 # ======================================================================
 
 experiment:
-  name: PhenoBench-RoWeederGT-Training # A descriptive name for the experiment
+  name: PhenoBench-PseudoGT-Training # A descriptive name for the experiment
   group: Unsupervised-Comparison      # Group for logging (e.g., in WandB)
   continue_with_errors: False
   start_from_grid: 0
@@ -34,22 +34,24 @@ parameters:
       - focal:
           weight: 1.0
   model:
-    name: [flat]
+    name: [flat] # path to model class or model name contained in EzDL or super-gradients
     params:
-      input_channels: &input_channels [3]
+      input_channels: &input_channels [['images']]
+      fusion: [add]
+
   dataset:
-    name: [PhenoBenchDataset]
     root: ["dataset/PhenoBench"]
     gt_folder: ["dataset/generated/phenobench_config/pseudogt"]
-    train_fields: [[]]
-    test_fields: [[]]
+    channels: *input_channels
+    train_fields: [['train']]
+    test_fields: [['val']]
     preprocess:
       resize: [512]
       mean: [[0.485, 0.456, 0.406]]
       std: [[0.229, 0.224, 0.225]]
   dataloader:
     num_workers: [0]
-    batch_size: [8]
+    batch_size: [10]
   train_metrics:
     JaccardIndex: &metric_params
       num_classes: [3]
