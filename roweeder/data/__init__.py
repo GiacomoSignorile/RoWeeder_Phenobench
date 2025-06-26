@@ -80,8 +80,32 @@ def get_classification_dataloaders(dataset_params, dataloader_params, seed=42):
             transform=transforms,
             target_transform=target_transforms,
         )
-        index = train_set.index
+        # Debug: print a preview of the groundtruth for the validation set
+        sample_val = val_set[0]
+        print("Validation groundtruth preview (unique labels):", torch.unique(sample_val.target))
+        print("Validation groundtruth preview (shape):", sample_val.target.shape)
 
+        # Save preview image to a folder
+        import os
+        import matplotlib.pyplot as plt
+
+        preview_folder = "gt_validation_previews"
+        print("Current working directory:", os.getcwd())
+        if not os.path.exists(preview_folder):
+            os.makedirs(preview_folder, exist_ok=True)
+        gt_np = sample_val.target.cpu().numpy()
+        # If a dummy channel exists (shape [1, H, W]), squeeze it out for visualization
+        if gt_np.ndim == 3 and gt_np.shape[0] == 1:
+            gt_np = gt_np.squeeze(0)
+        plt.figure(figsize=(6,6))
+        plt.imshow(gt_np, cmap="gray")
+        plt.title("Validation GT Preview")
+        preview_path = os.path.join(preview_folder, "validation_gt_preview.png")
+        plt.savefig(preview_path)
+        plt.close()
+        print("Saved validation groundtruth preview to:", preview_path)
+        
+        index = train_set.index
         train_index, val_index = train_test_split(
             index, test_size=0.2, random_state=seed
         )
@@ -113,7 +137,6 @@ def get_classification_dataloaders(dataset_params, dataloader_params, seed=42):
     return train_loader, val_loader, test_loader, deprocess
 
 def get_dataloaders(dataset_params, dataloader_params, seed=42):
-    
     if "gt_folder" not in dataset_params:
         return get_classification_dataloaders(dataset_params, dataloader_params, seed)
         
@@ -126,20 +149,20 @@ def get_dataloaders(dataset_params, dataloader_params, seed=42):
         train_params.pop("train_fields")
         train_params.pop("test_fields")
         
-        # This part handles training on pseudo-GT for WeedMap
+        # Use SelfSupervisedPhenoBenchDataset for training and validation (i.e. pseudo-GT)
         train_set = SelfSupervisedPhenoBenchDataset(
             **train_params,
             transform=transforms,
             target_transform=target_transforms,
         )
-        # This part handles validation on REAL GT for WeedMap
-        val_set = PhenoBenchDataset(
+        # For validation, also use the self-supervised dataset
+        val_set = SelfSupervisedPhenoBenchDataset(
             **train_params,
             transform=transforms,
             target_transform=target_transforms,
         )
+        
         index = train_set.index
-
         train_index, val_index = train_test_split(
             index, test_size=0.2, random_state=seed
         )
@@ -158,11 +181,13 @@ def get_dataloaders(dataset_params, dataloader_params, seed=42):
             batch_size=dataloader_params["batch_size"],
             shuffle=False,
             num_workers=dataloader_params["num_workers"],
+            collate_fn=val_set.collate_fn,
         )
     else:
         train_loader = None
         val_loader = None
         
+    # Test loader still uses PhenoBenchDataset (true GT)
     test_loader = get_testloader(
         dataset_params, dataloader_params, transforms, target_transforms
     )
@@ -186,6 +211,13 @@ def get_testloader(dataset_params, dataloader_params, transforms, target_transfo
         target_transform=target_transforms,
         **test_params,
     )
+    
+    # -- Debug: print a preview of the groundtruth --
+    sample = test_set[0]
+    print("Groundtruth preview (unique labels):", torch.unique(sample.target))
+    print("Groundtruth preview (shape):", sample.target.shape)
+    # -----------------------------------------------------
+    
     return torch.utils.data.DataLoader(
         test_set,
         batch_size=dataloader_params["batch_size"],
