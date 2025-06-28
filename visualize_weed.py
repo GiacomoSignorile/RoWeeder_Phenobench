@@ -87,6 +87,7 @@ def gt_fix(gt):
 
 def display_prediction():
     st_state = st.session_state
+    print(f"st_state", st_state)
     if st_state["img_name"] != "":
         found = False
         for k, name in enumerate(st_state["images"]):
@@ -107,6 +108,11 @@ def display_prediction():
     col1, col2, col3, col4, col5 = st.columns(5)
     data_dict = st_state["dataset"][i]
     img = data_dict.image
+    print(f"img name: {data_dict.name}")
+    print(f"img shape: {img.shape}")
+    if isinstance(img, torch.Tensor):
+        img = img.unsqueeze(0)
+
     gt = data_dict.target
 
     mask = st.session_state["labeller"](img)
@@ -132,8 +138,6 @@ def display_prediction():
 
     to_draw_gt = (gt.cpu().numpy()).astype(np.uint8)
     to_draw_gt = map_grayscale_to_rgb(to_draw_gt)
-    to_draw_gt = np.squeeze(to_draw_gt)  # Remove extra dimensions
-    st.image(Image.fromarray(to_draw_gt), width=300)
     to_draw_mask = mask.cpu().numpy().astype(np.uint8)
     line_mask = get_drawn_img(
         torch.zeros_like(torch.tensor(to_draw_mask)).numpy(), lines, color=(255, 0, 255)
@@ -141,13 +145,9 @@ def display_prediction():
     argmask = mask[0].type(torch.uint8)
     weed_map, weed_map_slic, slic = label_from_row(img, argmask, torch.tensor(line_mask).permute(2, 0, 1)[0])
     pred = weed_map.argmax(dim=0)
-    if pred.ndim == 2:
-        pred = pred.unsqueeze(0)
-    if gt.ndim == 2:
-        gt = gt.unsqueeze(0)
     f1 = f1_score(
-        pred.cuda(),
-        gt.cuda(),
+        weed_map.argmax(dim=0).cuda(),
+        gt,
         num_classes=3,
         average="macro",
         task="multiclass",
@@ -218,8 +218,10 @@ if __name__ == "__main__":
         # --- NEW LOGIC TO CHOOSE THE CORRECT DATASET ---
         if st.session_state["modality"] == "PhenoBench":
             # For PhenoBench, we use a simple train/val split selector
-            split = st.selectbox("Split", ["train", "val"], key="phenobench_split")
-            dataset = PhenoBenchDataset(root_dir=st.session_state["root"], split=split)
+            split = st.selectbox("Split", [["train"], ["val"]], key="phenobench_split")
+            dataset = get_dataset(
+                st.session_state["root"], st.session_state["modality"], fields=split
+            )
         else:
             # Original logic for the WeedMap-style dataset
             fields = st.multiselect(

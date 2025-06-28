@@ -7,7 +7,7 @@ from torch.utils.data import Dataset
 import torchvision
 from roweeder.data.utils import DataDict, extract_plants, LABELS, pad_patches
 from torchvision.transforms.functional import to_pil_image
-
+from torchvision import transforms as T
 class PhenoBenchDataset(Dataset):
     id2class = {
         0: "background",
@@ -28,8 +28,10 @@ class PhenoBenchDataset(Dataset):
         super().__init__()
         self.root = root
         self.channels = channels
-        self.transform = transform
-        self.target_transform = target_transform
+        # Set transform to identity if None
+        self.transform = transform 
+        # Set target_transform to identity if None
+        self.target_transform = target_transform 
         self.return_path = return_path
         self.fields = fields
         self.return_ndvi = return_ndvi
@@ -58,13 +60,17 @@ class PhenoBenchDataset(Dataset):
     
     def _get_gt(self, gt_path):
         gt = torchvision.io.read_image(gt_path)
+        #print(f"[DEBUG] Groundtruth shape before processing: {gt.shape}")
         gt = gt[[2, 1, 0], ::]
         gt = gt.argmax(dim=0)
-        gt = self.target_transform(gt)
+        #print(f"[DEBUG] Groundtruth shape after processing: {gt.shape}, unique values: {torch.unique(gt)}")
+        if self.target_transform is not None:
+            gt = self.target_transform(gt)
         return gt
     
     def _get_image(self, field, filename):
         channels = []
+        #print(f"[DEBUG] Loading image for field: {field}, filename: {filename}, channels: {self.channels}")
         for channel_folder in self.channels:
             channel_path = os.path.join(
                 self.root,
@@ -74,9 +80,8 @@ class PhenoBenchDataset(Dataset):
             )
             channel = torchvision.io.read_image(channel_path)
             channels.append(channel)
-        channels = torch.cat(channels).float()
-        pil_image = to_pil_image(channels)  
-        return self.transform(pil_image)
+        channels = torch.cat(channels).float()  
+        return self.transform(channels) 
 
     def _get_ndvi(self, field, filename):
         return "dummy_ndvi"  
@@ -86,8 +91,11 @@ class PhenoBenchDataset(Dataset):
         gt_path = os.path.join(
             self.gt_folders[field], filename
         )
+        #print(f"[DEBUG] Groundtruth path: {gt_path}")
         gt = self._get_gt(gt_path)
+        #print(f"[DEBUG] Groundtruth shape: {gt.shape}, unique values: {torch.unique(gt)}")
         channels = self._get_image(field, filename)
+        #print(f"[DEBUG] Image {channels}")
 
         data_dict = DataDict(
             image = channels,
@@ -99,6 +107,10 @@ class PhenoBenchDataset(Dataset):
         if self.return_ndvi:
             ndvi = self._get_ndvi(field, filename)
             data_dict.ndvi = ndvi
+
+        if self.transform is None:
+            # If no transform is passed, apply a default one
+            self.transform = T.Compose([T.ToTensor()])
         return data_dict
 
 

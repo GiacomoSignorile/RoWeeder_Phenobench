@@ -1,7 +1,7 @@
 dataset_params:
   modality: "PhenoBench"
-  root: "dataset/PhenoBench" # Path to the PhenoBench dataset
-  fields: [] # Not used for PhenoBench, but kept for structure
+  root: "dataset/PhenoBench/" # Path to the PhenoBench dataset
+  fields: ["val"] # Not used for PhenoBench, but kept for structure
 
 # --- VEGETATION DETECTOR PARAMETERS ---
 plant_detector_params:
