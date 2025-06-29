@@ -1,0 +1,72 @@
+# ======================================================================
+# Configuration for 5-Fold CV on PhenoBench with RoWeeder Pseudo-GT
+# ======================================================================
+
+experiment:
+  name: PhenoBench-PseudoGT-Training # A descriptive name for the experiment
+  group: Unsupervised-Comparison      # Group for logging (e.g., in WandB)
+  continue_with_errors: False
+  start_from_grid: 0
+  start_from_run: 0
+  search: grid
+  task: segmentation
+
+# --- HYPERPARAMETER GRID ---
+parameters:
+  seed: &seed [42]
+  tracker:
+    ignored_files: ["*.bin,*.safetensors"]
+    cache_directory: [wandb_cache]
+    train_image_log_frequency: [20]
+    val_image_log_frequency: [10]
+    test_image_log_frequency: [10]
+    tags: [[PhenoBench, RoWeeder-PseudoGT, Unsupervised]]
+  
+  train:
+    max_epochs: [30]
+    compile: [False]
+    initial_lr: [0.00001]
+    optimizer: [AdamW]
+    watch_metric: [F1Score]
+    freeze_backbone: [False]
+    check_nan: [1]
+
+  loss:
+    class_weighting: [True]
+    components:
+      - focal:
+          weight: 1.0
+  model:
+    name: [erfnet] # path to model class or model name contained in EzDL or super-gradients
+    params:
+      input_channels: &input_channels [['images']]
+      num_classes: [3] # Number of classes in the dataset
+
+  dataset:
+    root: ["dataset/PhenoBench"]
+    gt_folder: ["dataset/generated/phenobench_config/pseudogt"]
+    channels: *input_channels
+    train_fields: [['train']]
+    test_fields: [['val']]
+    preprocess:
+      resize: [512]
+      mean: [[0.485, 0.456, 0.406]]
+      std: [[0.229, 0.224, 0.225]]
+  dataloader:
+    num_workers: [0]
+    batch_size: [8]
+  train_metrics:
+    JaccardIndex: &metric_params
+      num_classes: [3]
+      task: [multiclass]
+      average: [macro]
+    F1Score: *metric_params
+  val_metrics:
+    JaccardIndex: *metric_params
+    F1Score: *metric_params
+
+other_grids: []
+  # - seed: [123]
+  # - seed: [456]
+  # - seed: [789]
+  # - seed: [101]

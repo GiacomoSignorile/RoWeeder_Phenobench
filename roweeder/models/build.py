@@ -179,3 +179,19 @@ def build_pseudo_gt_model(
     gt_folder
 ):
     return PseudoModel(gt_folder)
+
+def build_erfnet_model(
+    input_channels,    
+    num_classes=None,
+    checkpoint=None,
+    pretrained=False
+):
+    from roweeder.models.erfnet import ERFNetModel as ERFNet
+    if num_classes is None:
+        from roweeder.data.weedmap import WeedMapDataset
+        num_classes = len(WeedMapDataset.id2class)
+    model = ERFNet(num_classes=num_classes, pretrained=pretrained)
+    if checkpoint is not None:
+        chkpt = torch_dict_load(checkpoint)
+        load_state_dict(model, chkpt)
+    return model

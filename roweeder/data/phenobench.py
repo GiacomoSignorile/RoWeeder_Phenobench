@@ -78,6 +78,7 @@ class PhenoBenchDataset(Dataset):
                 channel_folder,
                 filename
             )
+            #print(f"[DEBUG] Loading channel from path: {channel_path}")
             channel = torchvision.io.read_image(channel_path)
             channels.append(channel)
         channels = torch.cat(channels).float()  
