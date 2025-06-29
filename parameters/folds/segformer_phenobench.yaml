@@ -16,18 +16,21 @@ parameters:
   seed: &seed [42]
   tracker:
     ignored_files: ["*.bin,*.safetensors"]
-    train_image_log_frequency: [50]
-    val_image_log_frequency: [20]
-    test_image_log_frequency: [20]
+    cache_directory: [wandb_cache]
+    train_image_log_frequency: [20]
+    val_image_log_frequency: [10]
+    test_image_log_frequency: [10]
     tags: [[PhenoBench, RoWeeder-PseudoGT, Unsupervised]]
+  
   train:
     max_epochs: [30]
     compile: [False]
-    initial_lr: [0.0001]
+    initial_lr: [0.000001]
     optimizer: [AdamW]
     watch_metric: [F1Score]
     freeze_backbone: [False]
     check_nan: [1]
+
   loss:
     class_weighting: [True]
     components:

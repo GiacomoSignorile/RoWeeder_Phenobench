@@ -46,7 +46,7 @@ class PhenoBenchDataset(Dataset):
             for k, v in self.gt_folders.items():
                 if os.path.isdir(os.path.join(v, os.listdir(v)[0])):
                     self.gt_folders[k] = os.path.join(v, "groundtruth") 
-
+        print(f"--- Using groundtruth folder: {self.gt_folders} ---")
         self.index = [
             (field, filename) for field in self.fields for filename in sorted(os.listdir(os.path.join(self.root, field, "images")))
         ]
@@ -106,29 +106,58 @@ class SelfSupervisedPhenoBenchDataset(PhenoBenchDataset):
     def __init__(self, root, channels, fields, gt_folder=None, transform=None, target_transform=None, return_path=False, max_plants=10):
         super().__init__(root, channels, fields, gt_folder, transform, target_transform, return_path)
         self.max_plants = max_plants
+
     def __getitem__(self, i):
         data_dict = super().__getitem__(i)
-        
-        connected_components = torch.tensor(cv2.connectedComponents(data_dict.target.numpy().astype('uint8'))[1])
+
+        # Calculate connected components from groundtruth
+        connected_components = torch.tensor(cv2.connectedComponents(
+            data_dict.target.numpy().astype('uint8')
+        )[1])
+
+        # Process pseudo GT for crops
         crops_mask = data_dict.target == LABELS.CROP.value
         crops_mask = connected_components * crops_mask
         crops_mask = extract_plants(data_dict.image, crops_mask)
         if crops_mask.shape[0] > self.max_plants:
-            # Get self.max_plants random crops
             indices = torch.randperm(crops_mask.shape[0])[:self.max_plants]
             crops_mask = crops_mask[indices]
-        
+
+        # Process pseudo GT for weeds
         weeds_mask = data_dict.target == LABELS.WEED.value
         weeds_mask = connected_components * weeds_mask
         weeds_mask = extract_plants(data_dict.image, weeds_mask)
         if weeds_mask.shape[0] > self.max_plants:
-            # Get self.max_plants random weeds
             indices = torch.randperm(weeds_mask.shape[0])[:self.max_plants]
             weeds_mask = weeds_mask[indices]
+
+        # # Debug: Save preview image for pseudo-GT, if available
+        # import os
+        # import matplotlib.pyplot as plt
+        # preview_folder = "pseudo_gt_previews"
+        # os.makedirs(preview_folder, exist_ok=True)
+
+        # if crops_mask.shape[0] > 0:
+        #     crop_preview = crops_mask[0].cpu().numpy()
+        #     print(f"Sample {i} crops_mask unique values: {torch.unique(crops_mask)}")
+        #     print(f"Sample {i} crop_preview raw shape: {crop_preview.shape}, min: {crop_preview.min()}, max: {crop_preview.max()}")
+        #     # If in CHW order with 3 channels, transpose to HWC
+        #     if crop_preview.ndim == 3 and crop_preview.shape[0] == 3:
+        #         crop_preview = crop_preview.transpose(1, 2, 0)
+        #     plt.figure(figsize=(4, 4))
+        #     plt.imshow(crop_preview, cmap='viridis', vmin=crop_preview.min(), vmax=crop_preview.max())
+        #     plt.title(f"Sample {i} Crop Preview")
+        #     preview_path = os.path.join(preview_folder, f"sample_{i}_crop.png")
+        #     plt.savefig(preview_path)
+        #     plt.close()
+        #     print(f"Saved pseudo-GT preview for sample {i} at {preview_path}")
+        # else:
+        #     print(f"Sample {i} has no crops_mask (empty).")
+
         data_dict.crops = crops_mask
         data_dict.weeds = weeds_mask
         return data_dict
-        
+
     def collate_fn(self, batch):
         crops = [item.crops for item in batch]
         weeds = [item.weeds for item in batch]

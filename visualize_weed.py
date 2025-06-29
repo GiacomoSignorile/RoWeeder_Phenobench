@@ -219,7 +219,8 @@ if __name__ == "__main__":
         if st.session_state["modality"] == "PhenoBench":
             # For PhenoBench, we use a simple train/val split selector
             split = st.selectbox("Split", ["train", "val"], key="phenobench_split")
-            dataset = PhenoBenchDataset(root_dir=st.session_state["root"], split=split)
+            phenobench_channels = [['images']]
+            dataset = PhenoBenchDataset(root=st.session_state["root"], fields=[split], channels=phenobench_channels)
         else:
             # Original logic for the WeedMap-style dataset
             fields = st.multiselect(
