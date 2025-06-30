@@ -34,7 +34,7 @@ parameters:
   loss:
     class_weighting: [True]
     components:
-      - focal:
+      - dice:
           weight: 1.0
   model:
     name: [flat] # path to model class or model name contained in EzDL or super-gradients

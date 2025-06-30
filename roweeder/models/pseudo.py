@@ -3,7 +3,7 @@ import torch
 import torchvision
 from roweeder.data.weedmap import WeedMapDataset
 from roweeder.models.utils import ModelOutput
-
+import torchvision.transforms.functional as TF  # import resize
 
 class PseudoModel(torch.nn.Module):
     def __init__(self, gt_folder: str):

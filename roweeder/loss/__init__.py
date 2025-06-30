@@ -5,10 +5,17 @@ from roweeder.models.utils import LossOutput, RowWeederModelOutput
 
 from .focal import FocalLoss, PlantLoss
 from .contrastive import ContrastiveLoss
+from .dice import DiceLoss
+from .lovasz import LovaszSoftmax
 from .utils import get_weight_matrix_from_labels
 
 
-LOGITS_LOSSES = {"focal": FocalLoss, "plant": PlantLoss}
+LOGITS_LOSSES = {
+    "focal": FocalLoss, 
+    "plant": PlantLoss,
+    "dice": DiceLoss,
+    "lovasz": LovaszSoftmax,
+}
 
 EMBEDDING_LOSSES = {
     "contrastive": ContrastiveLoss,
@@ -51,18 +58,25 @@ class RowLoss(nn.Module):
 
     def logits_loss(self, logits, target):
         weight_matrix, class_weights = None, None
+        # Dice and Lovasz often handle class imbalance internally or need a different approach.
         if self.class_weighting:
             num_classes = logits.shape[1]
             weight_matrix, class_weights = get_weight_matrix_from_labels(
                 target, num_classes
             )
-        return {
-            k: self.weights[k]
-            * loss(
-                logits, target, weight_matrix=weight_matrix, class_weights=class_weights
-            )
-            for k, loss in self.logits_components.items()
-        }
+
+        loss_dict = {}
+        for k, loss_fn in self.logits_components.items():
+            # Only pass weight_matrix to losses that are designed to use it (like FocalLoss)
+            if k == "focal" and weight_matrix is not None:
+                loss_dict[k] = self.weights[k] * loss_fn(
+                    logits, target, weight_matrix=weight_matrix, class_weights=class_weights
+                )
+            else:
+                # For Dice, Lovasz, etc., call them without the weight_matrix
+                loss_dict[k] = self.weights[k] * loss_fn(logits, target)
+        
+        return loss_dict
 
     def contrastive_loss(self, result: RowWeederModelOutput):
         return {
