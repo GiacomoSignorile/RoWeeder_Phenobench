@@ -700,8 +700,11 @@ class ExGVegetationDetector:
         # image: torch.Tensor (C, H, W) or np.ndarray (H, W, C)
         if isinstance(image, torch.Tensor):
             image = image.cpu().numpy()
-            if image.shape[0] == 3 and image.shape[0] < image.shape[-1]:
-                image = np.transpose(image, (1, 2, 0))
+        # Remove extra batch dimension if present
+        if image.ndim == 4 and image.shape[0] == 1:
+            image = image.squeeze(0)
+        if image.shape[0] == 3 and image.shape[0] < image.shape[-1]:
+            image = np.transpose(image, (1, 2, 0))
         image = image.astype(np.float32)
         if image.max() > 1.0:
             image = image / 255.0
@@ -712,7 +715,7 @@ class ExGVegetationDetector:
         exg = 2 * g - r - b
         binary_mask = (exg > self.threshold) 
         binary_mask = binary_mask.astype(np.uint8)
-        num_labels, labels, stats, _ = cv2.connectedComponentsWithStats(binary_mask)
+        num_labels, labels, stats, centroids = cv2.connectedComponentsWithStats(binary_mask)
         for num in range(num_labels):
             if stats[num, cv2.CC_STAT_AREA] < self.min_area:
                 binary_mask[labels == num] = 0

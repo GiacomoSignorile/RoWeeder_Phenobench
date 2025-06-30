@@ -17,7 +17,6 @@ def get_preprocessing(dataset_params):
     preprocess_params = dataset_params.pop("preprocess")
     transforms = T.Compose(
         [
-            T.ToTensor(),
             lambda x: x.float() / 255.0,
             T.Normalize(
                 mean=torch.tensor(preprocess_params["mean"]),
@@ -231,8 +230,37 @@ def get_dataset(root, modality, fields=None):
         fields = []
     if modality == "PhenoBench":
         # Use the PhenoBench dataset class, for example:
-        split = "train"  # or choose based on extra parameters
-        return PhenoBenchDataset(root_dir=root, split=split)
+        dataclass = PhenoBenchDataset
+        channels = ["images"]
+        input_transform = lambda x: x / 255.0
+        
+        args = dict(
+            root=root,
+            channels=channels,
+            transform=input_transform,
+            target_transform=lambda x: x,
+            return_path=True,
+            fields=fields
+        )        
+        return dataclass(**args)
     else:
+<<<<<<< HEAD
         # Original logic for the WeedMap-style dataset using fields
         return WeedMapDataset(root, fields)
+=======
+        dataclass = WeedMapDataset
+        channels = ["R", "G", "B", "NIR", "RE"]
+        input_transform = lambda x: x / 255.0
+
+        args = dict(
+            root=root,
+            channels=channels,
+            transform=input_transform,
+            target_transform=lambda x: x,
+            return_path=True,
+        )
+        if modality == "New Dataset":
+            args["fields"] = fields
+
+        return dataclass(**args)
+>>>>>>> edd67a14b486d5bd735723bfabea7a93a737c601

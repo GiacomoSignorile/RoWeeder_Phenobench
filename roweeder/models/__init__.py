@@ -1,4 +1,4 @@
-from roweeder.models.build import build_houghcc, build_houghslic, build_roweeder_flat, build_pseudo_gt_model, build_roweeder_pyramid, build_roweeder_segformer, build_segformer, build_resnet50, build_swinmlformer
+from roweeder.models.build import build_houghcc, build_houghslic, build_roweeder_flat, build_pseudo_gt_model, build_roweeder_pyramid, build_roweeder_segformer, build_segformer, build_resnet50, build_swinmlformer, build_erfnet_model
 from roweeder.models.pyramid import RoWeederPyramid, RoWeederFlat
 
 
@@ -18,6 +18,7 @@ MODEL_REGISTRY = {
     "swinmlformer": build_swinmlformer,
     "houghcc": build_houghcc,
     "houghslic": build_houghslic,
+    "erfnet": build_erfnet_model, 
 }
 
 
