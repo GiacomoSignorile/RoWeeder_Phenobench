@@ -41,6 +41,8 @@ parameters:
     params:
       input_channels: &input_channels [['images']]
       fusion: [add]
+      custom_hidden_sizes: [[48, 96, 240, 384]] 
+      custom_num_heads: [[3, 6, 10, 12]]
 
   dataset:
     root: ["dataset/PhenoBench"]
@@ -54,7 +56,7 @@ parameters:
       std: [[0.229, 0.224, 0.225]]
   dataloader:
     num_workers: [0]
-    batch_size: [10]
+    batch_size: [5] # Before was 10
   train_metrics:
     JaccardIndex: &metric_params
       num_classes: [3]

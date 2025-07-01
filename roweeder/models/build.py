@@ -2,7 +2,7 @@ from roweeder.detector import HoughCropRowDetector, get_vegetation_detector
 from roweeder.models.pseudo import PseudoModel
 from roweeder.models.rowweeder import RowWeeder
 
-from transformers.models.segformer.modeling_segformer import SegformerForImageClassification, SegformerConfig, SegformerForSemanticSegmentation
+from transformers.models.segformer.modeling_segformer import SegformerForImageClassification, SegformerConfig, SegformerForSemanticSegmentation, SegformerModel
 from transformers import ResNetForImageClassification, SwinModel, SwinConfig
 
 from roweeder.models.segmentation import HoughCC, HoughSLIC, HoughSLICSegmentationWrapper
@@ -67,10 +67,40 @@ def build_roweeder_flat(
     spatial_conv=True,
     blocks=4,
     checkpoint=None,
+    custom_hidden_sizes=None,
+    custom_num_heads=None, # Ensure this parameter is accepted
+    custom_depths=None,
 ):
-    encoder = SegformerForImageClassification.from_pretrained(version)
-    embeddings_dims = SegformerConfig.from_pretrained(version).hidden_sizes
+    
+    if custom_hidden_sizes:
+        # --- BUILD A NEW, RANDOMLY INITIALIZED, SMALLER ENCODER ---
+        print("--- Building RoWeederFlat with CUSTOM Segformer/MiT configuration ---")
+        
+        # Use mit-b0's other params as a base for simplicity
+        base_config = SegformerConfig.from_pretrained("nvidia/mit-b0")
+        
+        config = SegformerConfig(
+            hidden_sizes=custom_hidden_sizes,
+            num_attention_heads=custom_num_heads if custom_num_heads else base_config.num_attention_heads,
+            depths=custom_depths if custom_depths else base_config.depths,
+            num_encoder_blocks=len(custom_hidden_sizes),
+            patch_sizes=base_config.patch_sizes,
+            sr_ratios=base_config.sr_ratios,
+        )
+        print(f"Custom config created with hidden sizes: {config.hidden_sizes}")
+        
+        # Create the encoder from this custom config. Its weights will be random.
+        encoder = SegformerModel(config).encoder 
+        embeddings_dims = config.hidden_sizes
+
+    else:
+        # --- ORIGINAL LOGIC FOR PRE-TRAINED MODEL ---
+        print(f"--- Building RoWeederFlat with PRE-TRAINED version: {version} ---")
+        encoder = SegformerForImageClassification.from_pretrained(version).segformer.encoder
+        embeddings_dims = SegformerConfig.from_pretrained(version).hidden_sizes
+    print("Hidden sizes:", embeddings_dims)
     embeddings_dims = embeddings_dims[:blocks]
+    print("Hidden sizes(blocks):", embeddings_dims)
     num_classes = len(WeedMapDataset.id2class)
     model = RoWeederFlat(
         encoder=encoder,

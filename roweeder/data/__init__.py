@@ -244,10 +244,6 @@ def get_dataset(root, modality, fields=None):
         )        
         return dataclass(**args)
     else:
-<<<<<<< HEAD
-        # Original logic for the WeedMap-style dataset using fields
-        return WeedMapDataset(root, fields)
-=======
         dataclass = WeedMapDataset
         channels = ["R", "G", "B", "NIR", "RE"]
         input_transform = lambda x: x / 255.0
@@ -263,4 +259,3 @@ def get_dataset(root, modality, fields=None):
             args["fields"] = fields
 
         return dataclass(**args)
->>>>>>> edd67a14b486d5bd735723bfabea7a93a737c601
