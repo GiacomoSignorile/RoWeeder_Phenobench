@@ -7,6 +7,7 @@ from .focal import FocalLoss, PlantLoss
 from .contrastive import ContrastiveLoss
 from .dice import DiceLoss
 from .lovasz import LovaszSoftmax
+from .evidential_loss import CrossEntropyBayesRiskLoss
 from .utils import get_weight_matrix_from_labels
 
 
@@ -15,6 +16,7 @@ LOGITS_LOSSES = {
     "plant": PlantLoss,
     "dice": DiceLoss,
     "lovasz": LovaszSoftmax,
+    "evidential_bayes": CrossEntropyBayesRiskLoss,
 }
 
 EMBEDDING_LOSSES = {
@@ -45,6 +47,15 @@ class RowLoss(nn.Module):
                 if k in EMBEDDING_LOSSES
             ]
         )
+
+        active_loss_names = list(self.logits_components.keys()) + list(self.embedding_components.keys())
+
+        if active_loss_names:
+            print(f"Initialized with active loss components: {', '.join(active_loss_names)}")
+        else:
+            print("RowLoss initialized with NO active loss components!")
+    
+
         if (
             set(components.keys())
             - set(self.logits_components.keys())

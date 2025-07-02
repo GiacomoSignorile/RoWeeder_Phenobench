@@ -51,8 +51,19 @@ def build_roweeder_pyramid(
     encoder = SegformerForImageClassification.from_pretrained(version)
     embeddings_dims = SegformerConfig.from_pretrained(version).hidden_sizes
     embeddings_dims = embeddings_dims[:blocks]
+    # Force a fixed embedding dims list, same as flat model
+    embeddings_dims = [64, 128, 320, 512]
+    print(f"Using {embeddings_dims} embedding dimensions from Segformer pyramid config.")
     num_classes = len(WeedMapDataset.id2class)
-    model = RoWeederPyramid(encoder, num_classes, embeddings_dims, fusion=fusion, upsampling=upsampling, blocks=blocks, spatial_conv=spatial_conv)
+    model = RoWeederPyramid(
+        encoder=encoder,
+        num_classes=num_classes,
+        embedding_dims=embeddings_dims,
+        fusion=fusion,
+        upsampling=upsampling,
+        spatial_conv=spatial_conv,
+        blocks=blocks,
+    )
     if checkpoint is not None:
         chkpt = torch_dict_load(checkpoint)
         load_state_dict(model, chkpt)
@@ -68,9 +79,17 @@ def build_roweeder_flat(
     blocks=4,
     checkpoint=None,
 ):
-    encoder = SegformerForImageClassification.from_pretrained(version)
+    config = SegformerConfig.from_pretrained(version)
+    config.hidden_sizes = [64, 128, 320, 512]  # or a larger version like [128, 256, 384, 512]
+    # original Encoder attention heads: [1, 2, 5, 8]
+    config.num_attention_heads = [2, 4, 10, 16]  # Each head_dim: [16, 32, 64, 64]
+    encoder = SegformerForImageClassification(config)  
+
+    print(f"Encoder attention heads: {encoder.config.num_attention_heads}")
     embeddings_dims = SegformerConfig.from_pretrained(version).hidden_sizes
     embeddings_dims = embeddings_dims[:blocks]
+    embeddings_dims = [64, 128, 320, 512]
+    print(f"Using {embeddings_dims} embedding dimensions from Segformer flat config.")
     num_classes = len(WeedMapDataset.id2class)
     model = RoWeederFlat(
         encoder=encoder,
@@ -195,3 +214,4 @@ def build_erfnet_model(
         chkpt = torch_dict_load(checkpoint)
         load_state_dict(model, chkpt)
     return model
+

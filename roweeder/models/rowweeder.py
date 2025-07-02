@@ -18,6 +18,7 @@ class RowWeeder(nn.Module):
         embedding_dims,
         embedding_size=(1,),
         transformer_layers=4,
+        evidential_=False
     ) -> None:
         super().__init__()
         self.encoder = encoder
@@ -89,6 +90,9 @@ class RowWeeder(nn.Module):
             )
         )
         self.decoder = nn.ModuleList(decoder_layers)
+        self.evidentia_ = evidential
+        if self.evidential_:
+            self.evidential_activation = nn.ReLU()      
 
     def _encode_plants(self, plants):
         if plants is None:
@@ -230,6 +234,10 @@ class RowWeeder(nn.Module):
         background_logits = self._decode_background(features)
         logits = torch.cat([logits, background_logits], dim=1)
         logits = F.interpolate(logits, size=(H, W), mode="bilinear")
+
+        if self.evidential_:
+            evidence = self_evidential_activation(logits)
+            return RowWeederModelOutput(logits=evidence, scores=contrastive_scores)
         return RowWeederModelOutput(logits=logits, scores=contrastive_scores)
 
 

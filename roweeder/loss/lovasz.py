@@ -20,9 +20,10 @@ def lovasz_grad(gt_sorted):
     return jaccard
 
 class LovaszSoftmax(Module):
-    def __init__(self, reduction: str = "mean", **kwargs):
+    def __init__(self, reduction: str = "mean", label_smoothing: float = 0.2, **kwargs):
         super().__init__()
         self.reduction = get_reduction(reduction)
+        self.label_smoothing = label_smoothing
 
     def __call__(self, x: torch.Tensor, target: torch.Tensor, weight_matrix=None, **kwargs) -> torch.Tensor:
         # x is the model's output logits: [Batch, Num_Classes, H, W]
@@ -32,15 +33,24 @@ class LovaszSoftmax(Module):
         # Get probabilities from logits
         probas = F.softmax(x, dim=1)
         
+        # If label smoothing is enabled, create a smoothed one-hot target
+        if self.label_smoothing > 0:
+            # print(f"[LovaszSoftmax] Using label smoothing: {self.label_smoothing}")
+            with torch.no_grad():
+                # target: [B, H, W] -> [B, num_classes, H, W] one-hot
+                target_onehot = torch.zeros_like(x).scatter_(1, target.unsqueeze(1), 1)
+                target_smooth = target_onehot * (1 - self.label_smoothing) + self.label_smoothing / num_classes
+        else:
+            target_smooth = None  # Not used if no smoothing
+        
         # The Lovasz loss is calculated per class and then averaged
         loss = 0.0
         for c in range(num_classes):
-            # For each class, create a binary problem: is it this class or not?
-            fg = (target == c).float()  # Foreground for this class
-            class_proba = probas[:, c] # Probabilities for this class
-            
-            fg = fg.view(-1)
-            class_proba = class_proba.view(-1)
+            if self.label_smoothing > 0:
+                fg = target_smooth[:, c].reshape(-1)
+            else:
+                fg = (target == c).float().reshape(-1)
+            class_proba = probas[:, c].reshape(-1)
             
             errors = (fg - class_proba).abs()
             errors_sorted, perm = torch.sort(errors, 0, descending=True)

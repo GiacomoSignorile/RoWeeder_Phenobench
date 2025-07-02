@@ -36,7 +36,10 @@ parameters:
       num_classes: [3]
       task: [multiclass]
       average: [macro]
-    F1Score: *metric_params
+    F1Score:
+      num_classes: [3]
+      task: [multiclass]
+      average: [none]
 
 other_grids:
   # -   dataset: # parameters depending on the class you defined for the dataset

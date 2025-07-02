@@ -34,7 +34,7 @@ parameters:
   loss:
     class_weighting: [True]
     components:
-      - dice:
+      - lovasz:
           weight: 1.0
   model:
     name: [flat] # path to model class or model name contained in EzDL or super-gradients
@@ -54,7 +54,7 @@ parameters:
       std: [[0.229, 0.224, 0.225]]
   dataloader:
     num_workers: [0]
-    batch_size: [10]
+    batch_size: [5]
   train_metrics:
     JaccardIndex: &metric_params
       num_classes: [3]

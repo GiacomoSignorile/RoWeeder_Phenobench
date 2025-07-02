@@ -1,0 +1,65 @@
+# FILE: parameters/test/test_phenobench_latest.yaml
+
+experiment:
+  name: "PhenoBench Latest Ckpt Evaluation" # A descriptive name for your WandB run
+  group: "Custom Model Tests"
+  search: grid
+  task: segmentation
+
+parameters:
+  seed: &seed [42]
+
+  tracker:
+    ignored_files: ["*.bin,*.safetensors"]
+    test_image_log_frequency: [1]
+
+  model:
+    name: [flat] 
+    params:
+      input_channels: &input_channels [['images']] 
+      fusion: [add]                               
+      checkpoint: ["wandb/run-20250701_163337-cui1f0cv/files/best/model.safetensors"]
+  loss:
+    class_weighting: [True]
+    components:
+      - focal:
+          weight: 1.0
+  # --- CRITICAL: Dataset Configuration ---
+  dataset:
+    root: ["dataset/PhenoBench"]
+    gt_folder: ["dataset/generated/phenobench_config/pseudogt"]
+    channels: *input_channels
+    train_fields: [['train']]
+    test_fields: [['val']]
+    preprocess:
+      resize: [512]
+      mean: [[0.485, 0.456, 0.406]]
+      std: [[0.229, 0.224, 0.225]]
+
+  # --- CRITICAL: Dataloader Configuration ---
+  dataloader:
+    num_workers: [0] # Good for Windows
+    batch_size: [10]  # Use a small batch size for testing to avoid memory issues
+
+  # --- Metrics for Evaluation ---
+  # These define what will be calculated and reported.
+  train_metrics:
+    JaccardIndex: &metric_params
+      num_classes: [3]
+      task: [multiclass]
+      average: [macro]
+    F1Score: *metric_params
+  val_metrics:
+    JaccardIndex: *metric_params
+    F1Score: *metric_params
+    # Replace train_metrics and val_metrics with test_metrics:
+  test_metrics:
+    JaccardIndex:
+      num_classes: [3]
+      task: [multiclass]
+      average: [macro]
+    F1Score:
+      num_classes: [3]
+      task: [multiclass]
+      average: [none]
+other_grids: []
