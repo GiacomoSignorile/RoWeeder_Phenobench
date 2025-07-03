@@ -42,7 +42,7 @@ def get_vegetation_detector(ndvi_threshold=0.5, exg_threshold=0.3, exg_min_area=
         # Default indices for WeedMap (R,G,B,NIR,RE)
         nir_idx = 3
         red_idx = 0
-        # If using PhenoBench (RGB only), set indices to valid RGB channels (dummy NDVI)
+
         if st.session_state.get("modality") == "PhenoBench":
             nir_idx = 0
             red_idx = 2
@@ -199,14 +199,12 @@ def display_prediction():
 if __name__ == "__main__":
     st.set_page_config(layout="wide")
     
-    # Add PhenoBench to the options
     default_roots = {
         "PhenoBench": "dataset/PhenoBench",
         "New Dataset": "dataset/patches/512"
     }
 
     with st.sidebar:
-        # Add PhenoBench to the selectbox
         st.selectbox("Modality", ["PhenoBench", "New Dataset"], key="modality")
         
         st.text_input(
@@ -215,7 +213,6 @@ if __name__ == "__main__":
             label="root",
         )
 
-        # --- NEW LOGIC TO CHOOSE THE CORRECT DATASET ---
         if st.session_state["modality"] == "PhenoBench":
             # For PhenoBench, we use a simple train/val split selector
             split = st.selectbox("Split", [["train"], ["val"]], key="phenobench_split")
@@ -223,7 +220,6 @@ if __name__ == "__main__":
                 st.session_state["root"], st.session_state["modality"], fields=split
             )
         else:
-            # Original logic for the WeedMap-style dataset
             fields = st.multiselect(
                 "Fields",
                 ["000", "001", "002", "003", "004"],

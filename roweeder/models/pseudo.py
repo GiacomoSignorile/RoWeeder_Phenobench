@@ -18,7 +18,7 @@ class PseudoModel(torch.nn.Module):
         pseudo_gts = []
         for n in name:
             img_name = os.path.basename(n)
-            print(f"[DEBUG] Processing image: {img_name}")
+            #print(f"[DEBUG] Processing image: {img_name}")
             field = os.path.basename(os.path.dirname(os.path.dirname(n)))
             img_path = os.path.join(self.gt_folder, field, img_name)
             gt = torchvision.io.read_image(img_path)

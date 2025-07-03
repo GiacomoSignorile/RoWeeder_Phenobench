@@ -261,8 +261,6 @@ class ERFNetModel(nn.Module):
         """
         # The 'freeze_backbone' option comes from the YAML's train_params
         if train_params.get("freeze_backbone", False):
-            # If we wanted to support freezing, we would add logic here
-            # to only return the parameters of the decoder and segmentation_head.
             print("--- WARNING: freeze_backbone=True is not fully implemented for ERFNet. Training all parameters. ---")
             return self.parameters()
         else:

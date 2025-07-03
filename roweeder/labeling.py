@@ -117,8 +117,7 @@ def label_from_row(img, mask, row_image, slic_params=None):
     conn_components = torch.tensor(conn_components)
     row_crop_intersection = conn_components * row_image.bool()
     crop_values = row_crop_intersection.unique()
-    
-    # --- SIMPLIFIED LOGIC ---
+
     if len(crop_values) <= 1: # Also handle the case of only background
         # No crops detected on rows, so all vegetation is weed
         weedmap = torch.stack([~mask, torch.zeros_like(mask), mask])

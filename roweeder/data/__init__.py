@@ -93,7 +93,7 @@ def get_classification_dataloaders(dataset_params, dataloader_params, seed=42):
         if not os.path.exists(preview_folder):
             os.makedirs(preview_folder, exist_ok=True)
         gt_np = sample_val.target.cpu().numpy()
-        # If a dummy channel exists (shape [1, H, W]), squeeze it out for visualization
+        # Check if a dummy channel exists (shape [1, H, W])
         if gt_np.ndim == 3 and gt_np.shape[0] == 1:
             gt_np = gt_np.squeeze(0)
         plt.figure(figsize=(6,6))
@@ -148,13 +148,13 @@ def get_dataloaders(dataset_params, dataloader_params, seed=42):
         train_params.pop("train_fields")
         train_params.pop("test_fields")
         
-        # Use SelfSupervisedPhenoBenchDataset for training and validation (i.e. pseudo-GT)
+        # SelfSupervisedPhenoBenchDataset for training and validation (i.e. pseudo-GT)
         train_set = SelfSupervisedPhenoBenchDataset(
             **train_params,
             transform=transforms,
             target_transform=target_transforms,
         )
-        # For validation, also use the self-supervised dataset
+        # For testing, also the self-supervised dataset with pseudo-GT
         val_set = SelfSupervisedPhenoBenchDataset(
             **train_params,
             transform=transforms,
@@ -211,11 +211,10 @@ def get_testloader(dataset_params, dataloader_params, transforms, target_transfo
         **test_params,
     )
     
-    # -- Debug: print a preview of the groundtruth --
+    # For Debug: print a preview of the groundtruth 
     sample = test_set[0]
-    print("Groundtruth preview (unique labels):", torch.unique(sample.target))
     print("Groundtruth preview (shape):", sample.target.shape)
-    # -----------------------------------------------------
+
     
     return torch.utils.data.DataLoader(
         test_set,

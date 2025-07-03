@@ -16,7 +16,6 @@ plant_detector_params:
 # --- HOUGH TRANSFORM CROP ROW DETECTOR PARAMETERS ---
 hough_detector_params:
   # Voting threshold for a line to be considered valid.
-  # A higher value like 190 is good for clear rows.
   threshold: 120
   
   # Resolution of the Hough accumulator.
@@ -35,10 +34,10 @@ hough_detector_params:
   # Parameter to control angle reduction towards a central orientation. 1.0 means no reduction.
   theta_reduction_threshold: 1.00
   
-  # Let the algorithm determine the angle automatically.
+  # Null determine the angle automatically.
   theta_value: null
 
-# --- SLIC PARAMETERS (if used for patch-based classification) ---
+
 slic_params:
   percent: 0.005
   compactness: 20
