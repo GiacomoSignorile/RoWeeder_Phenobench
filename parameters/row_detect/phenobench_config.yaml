@@ -27,7 +27,7 @@ hough_detector_params:
   angle_error: 5
   
   # Tolerance for clustering lines into a single crop row.
-  clustering_tol: 3
+  clustering_tol: 10
   
   # Significance level for the uniformity test to discard images with no rows.
   uniform_significance: 0.10

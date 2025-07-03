@@ -4,6 +4,7 @@ import torch
 from roweeder.models.utils import LossOutput, RowWeederModelOutput
 
 from .focal import FocalLoss, PlantLoss
+from .focal_ls import FocalLSLoss
 from .contrastive import ContrastiveLoss
 from .dice import DiceLoss
 from .lovasz import LovaszSoftmax
@@ -12,6 +13,7 @@ from .utils import get_weight_matrix_from_labels
 
 LOGITS_LOSSES = {
     "focal": FocalLoss, 
+    "focal_ls": FocalLSLoss,
     "plant": PlantLoss,
     "dice": DiceLoss,
     "lovasz": LovaszSoftmax,

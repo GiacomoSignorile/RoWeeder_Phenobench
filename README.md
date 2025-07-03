@@ -3,9 +3,7 @@
 This repository documents the process and results of adapting the **RoWeeder** framework \[[1](#citation)\] for unsupervised weed detection on the **PhenoBench** dataset \[[2](#citation)\]. The original RoWeeder pipeline was designed for the multi-channel WeedMap dataset. This work details the necessary modifications to apply its powerful pseudo-labeling logic to the RGB-only PhenoBench benchmark.
 
 Our primary goal is to provide a fair and comprehensive evaluation of the RoWeeder unsupervised labeling strategy on a new, challenging dataset. We detail the engineering solutions for data loading and feature extraction and present a full set of experiments training modern segmentation architectures like SegFormer and ERFNet on the generated pseudo-ground truth.
-
-![RoWeeder method](res/method.svg)
-
+![Roweeder Phenobench method](res/image.png)
 ---
 
 ## Installation
