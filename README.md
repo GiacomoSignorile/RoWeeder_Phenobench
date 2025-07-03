@@ -1,8 +1,9 @@
 # RoWeeder for the PhenoBench Dataset
 
-This repository documents the process and results of adapting the **RoWeeder** framework \[[1](#citation)\] for unsupervised weed detection on the **PhenoBench** dataset \[[2](#citation)\]. The original RoWeeder pipeline was designed for the multi-channel WeedMap dataset. This work details the necessary modifications to apply its powerful pseudo-labeling logic to the RGB-only PhenoBench benchmark.
+This repository documents the process and results of adapting the **RoWeeder** framework \[[1](#citation)\] for unsupervised weed detection on the **PhenoBench** dataset \[[2](#citation)\]. The original RoWeeder pipeline was designed for the multi-channel WeedMap dataset. This work details the necessary modifications to apply its pseudo-labeling logic to the RGB-only PhenoBench benchmark.
 
-Our primary goal is to provide a fair and comprehensive evaluation of the RoWeeder unsupervised labeling strategy on a new, challenging dataset. We detail the engineering solutions for data loading and feature extraction and present a full set of experiments training modern segmentation architectures like SegFormer and ERFNet on the generated pseudo-ground truth.
+Our primary goal is to provide a fair and comprehensive evaluation of the RoWeeder unsupervised labeling strategy on a new dataset. We detail the engineering solutions for data loading and feature extraction and present a full set of experiments training segmentation architectures like SegFormer and ERFNet on the generated pseudo-ground truth.
+
 ![Roweeder Phenobench method](res/image.png)
 ---
 
@@ -50,7 +51,7 @@ Before generating labels for the entire dataset, it is highly recommended to use
 ```bash
 streamlit run visualize_weed.py
 ```
-In the web interface, select "PhenoBench" as the modality and adjust the sliders for the `ExGDetector` and `HoughCropRowDetector` to find settings that produce a good vegetation mask and accurate row detection across several different images. Note down these optimal parameters.
+In the web interface, select "PhenoBench" as the modality and adjust the sliders for the `ExGDetector` and `HoughCropRowDetector` to find settings that produce a good vegetation mask and accurate row detection across several different images.
 
 ## Generating Pseudo-Ground Truth
 
@@ -58,7 +59,7 @@ Once you have tuned your parameters, you can generate the pseudo-GT for the enti
 
 1.  **Update the Configuration:** Open a configuration file (e.g., `configs/phenobench_config.yaml`). Ensure the parameters under `plant_detector_params` and `hough_detector_params` match the optimal values you found during visualization.
 
-2.  **Run the Labeling Script:** Execute the `save_and_label` script. This process is computationally intensive and may take a significant amount of time. The script has been optimized to run much faster by removing the unnecessary SLIC superpixel generation.
+2.  **Run the Labeling Script:**  The script has been optimized to run much faster by removing the unnecessary SLIC superpixel generation.
 
     ```bash
     # This command reads the parameters from the YAML and saves the pseudo-GT
@@ -79,8 +80,6 @@ python main.py experiment --parameters configs/your_experiment_config.yaml
 For example, to run the experiment with the ERFNet model and Lovász-Softmax loss, you would point to a YAML configured for that setup.
 
 ## Citation
-
-If you use this adaptation or the original RoWeeder framework in your research, please consider citing the original paper:
 
 [1] **RoWeeder: Unsupervised Weed Mapping through Crop-Row Detection**
 ```bibtex
